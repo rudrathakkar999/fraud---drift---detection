@@ -1,13 +1,18 @@
 # Python
-__pycache__/
+
+**pycache**/
 *.py[cod]
 
 # Virtual environments
+
 venv/
 .venv/
 
-# Dataset
+# Dataset files
+
 data/creditcard.csv
+data/archive.zip
 
 # VS Code
+
 .vscode/
