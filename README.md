@@ -1,129 +1,106 @@
 # AIML-02: Fraud & Anomaly Detection with Drift Monitoring
 
-A machine learning pipeline for detecting fraudulent credit card transactions and monitoring changes in transaction patterns over time.
+A machine learning pipeline for credit card fraud detection, unsupervised anomaly detection, financial cost optimization, and statistical data drift monitoring.
 
 ## 1. Project Overview
 
-Fraud detection models can become less effective as transaction patterns change, new fraud tactics emerge, and customer spending behavior evolves. A model trained once may gradually become less reliable if these changes are not monitored.
+Fraud detection is challenging because fraudulent transactions represent a very small proportion of all transactions. Machine learning models must identify suspicious activity while minimizing false alarms.
 
-This project implements a fraud detection pipeline that combines supervised classification, unsupervised anomaly detection, financial cost optimization, and statistical data drift monitoring.
+This project combines supervised and unsupervised machine learning with financial cost optimization and statistical drift monitoring.
 
-The pipeline also simulates artificially shifted transaction data to demonstrate how a drift monitoring system can identify changes in feature distributions and trigger a retraining alert.
+## 2. Features
 
-## 2. Objectives
-
-* Handle the extreme class imbalance found in credit card fraud datasets.
-* Train and compare supervised and unsupervised machine learning models.
-* Evaluate model performance using Average Precision (PR-AUC).
-* Detect changes in transaction feature distributions.
-* Trigger an alert when the configured drift threshold is reached.
-* Analyze the financial costs of missed fraud and incorrectly flagged legitimate transactions.
+* Fraud classification using a class-weighted Random Forest.
+* Unsupervised anomaly detection using Isolation Forest.
+* Model evaluation using PR-AUC and ROC-AUC.
+* Financial cost-based classification threshold optimization.
+* Confusion matrix reporting.
+* Feature distribution monitoring using the two-sample Kolmogorov-Smirnov (KS) test.
+* Simulated data drift and automated threshold-based alerts.
+* Synthetic dataset generation when the real dataset is unavailable.
 
 ## 3. Technology Stack
 
-* **Python** — Core programming language
-* **Pandas and NumPy** — Data processing and numerical operations
-* **Scikit-learn** — Model training, preprocessing, and evaluation
-* **SciPy** — Statistical drift detection
-* **Matplotlib** — Available for visualization and plotting
+* Python
+* NumPy
+* Pandas
+* Scikit-learn
+* SciPy
 
-## 4. Models and Methodology
+## 4. Machine Learning Methodology
 
-### 4.1 Supervised Fraud Classification
+### Supervised Learning
 
-The project uses a Random Forest classifier with class weighting.
+A Random Forest classifier with `balanced_subsample` class weighting is used to classify transactions as legitimate or fraudulent.
 
-Class weighting assigns greater importance to the minority fraud class during model training. This helps address class imbalance without relying exclusively on oversampling techniques such as SMOTE.
+The model generates fraud probabilities and is evaluated using Average Precision (PR-AUC) and ROC-AUC.
 
-The model generates fraud probabilities that are evaluated using Average Precision.
+### Unsupervised Learning
 
-### 4.2 Unsupervised Anomaly Detection
+Isolation Forest identifies unusual transaction patterns without using fraud labels during training.
 
-The project uses Isolation Forest to identify transactions that differ from typical transaction patterns.
+Its anomaly scores are evaluated against the available transaction labels using PR-AUC.
 
-Unlike the supervised classifier, Isolation Forest does not use the fraud labels during model fitting. Its anomaly scores are evaluated against the available labels to compare its ability to identify fraudulent transactions.
+### Financial Cost Optimization
 
-### 4.3 Model Evaluation
+The pipeline selects a classification threshold that minimizes the estimated financial cost over the evaluated threshold range.
 
-The pipeline reports Average Precision for both models.
+The current cost assumptions are:
 
-Average Precision summarizes the precision-recall relationship across different classification thresholds. It is particularly useful for imbalanced fraud detection problems because accuracy can appear high even when a model fails to identify most fraudulent transactions.
+* False negative: $150 per missed fraud transaction.
+* False positive: $10 per legitimate transaction incorrectly flagged.
 
-ROC-AUC may provide additional information, but it should not be the only evaluation metric for a highly imbalanced dataset.
+The estimated total cost is:
 
-### 4.4 Financial Cost Optimization
+`Total Cost = (False Negatives × $150) + (False Positives × $10)`
 
-The pipeline evaluates different classification thresholds using an illustrative financial cost model.
+These costs are illustrative assumptions, not actual costs from a financial institution.
 
-The current implementation assumes:
+### Data Drift Monitoring
 
-* False negative cost: $150 per missed fraudulent transaction.
-* False positive cost: $10 per legitimate transaction incorrectly flagged as fraudulent.
+The pipeline compares baseline transaction features against incoming batches using the two-sample KS test.
 
-The total estimated cost is calculated as:
+Configuration:
 
-`Total Cost = (False Negatives × Cost per False Negative) + (False Positives × Cost per False Positive)`
+* Significance level: 0.01
+* Drift alert threshold: 15% of monitored features
 
-The pipeline selects the threshold that minimizes this estimated cost over the evaluated threshold range.
+An alert is raised when the proportion of drifted features reaches or exceeds the configured threshold.
 
-These values are assumptions for demonstration purposes, not measured costs from a real financial institution.
+The pipeline simulates both a normal batch and an artificially shifted batch to demonstrate the monitoring mechanism.
 
-### 4.5 Data Drift Detection
+A drift alert indicates a change in feature distributions; it does not automatically mean that model performance has deteriorated.
 
-The project uses the two-sample Kolmogorov-Smirnov (KS) test to compare feature distributions between a baseline dataset and an incoming batch.
+## 5. Dataset
 
-For each feature, the test checks whether the two samples show statistically significant evidence of a distribution difference.
+This project supports the Kaggle Credit Card Fraud Detection dataset.
 
-The configured significance level is `0.01`.
+The original dataset contains 284,807 transactions and 492 fraudulent transactions.
 
-The monitor calculates the proportion of features flagged as drifted. A retraining alert is raised when the proportion reaches or exceeds `0.15` (15%).
+Dataset source:
 
-This is a basic statistical data drift check. A drift alert indicates a change in feature distributions; it does not by itself prove that model accuracy has decreased.
+https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
 
-### 4.6 Simulated Drift
+Download `creditcard.csv` and place it in the project's `data` directory.
 
-The pipeline compares two batches:
-
-1. **Normal batch:** Sampled from the validation data without deliberately changing its feature distributions.
-2. **Shifted batch:** A copy of sampled validation data in which selected features are artificially modified.
-
-The monitor evaluates both batches and reports whether its configured alert threshold has been reached.
-
-This simulation demonstrates the drift detection mechanism without requiring a continuously running transaction stream.
-
-## 5. Project Structure
+Expected structure:
 
 ```text
-fraud---drift---detection/
+AWS SBG (Student Builder Group)/
 ├── src/
 │   └── fraud_pipeline.py
 ├── data/
-│   └── creditcard.csv        # Optional; not included in the repository
-├── .gitignore
+│   └── creditcard.csv
 ├── README.md
-└── requirements.txt
+├── requirements.txt
+└── .gitignore
 ```
-
-The `data/` directory and dataset are optional. If the expected dataset is unavailable, the pipeline generates a synthetic dataset for demonstration.
-
-## 6. Dataset
-
-The pipeline supports the commonly used Credit Card Fraud Detection dataset, which contains transaction features, an `Amount` column, a `Time` column, and a binary `Class` label.
-
-* `Class = 0`: Legitimate transaction
-* `Class = 1`: Fraudulent transaction
-
-The pipeline expects the dataset at:
-
-`data/creditcard.csv`
 
 The dataset is not included in this repository.
 
-If the file is not found, the pipeline generates a synthetic dataset with a small fraud proportion. This allows the pipeline to be executed without downloading the real dataset.
+If the expected dataset is unavailable, the pipeline generates a synthetic dataset for demonstration. Synthetic data is useful for testing but does not represent verified real-world fraud detection performance.
 
-**Important:** Synthetic data is intended for testing and demonstration. Performance measured on synthetic data should not be presented as verified performance on real financial transactions.
-
-## 7. Installation and Setup
+## 6. Installation
 
 ### Prerequisites
 
@@ -131,94 +108,98 @@ If the file is not found, the pipeline generates a synthetic dataset with a smal
 * Git
 * pip
 
-### Step 1: Clone the repository
+### Clone the repository
 
-```bash
+```powershell
 git clone https://github.com/rudrathakkar999/fraud---drift---detection.git
 cd fraud---drift---detection
 ```
 
-### Step 2: Create a virtual environment
-
-**Windows PowerShell:**
+### Create a virtual environment
 
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 ```
 
-If PowerShell blocks virtual environment activation, use Command Prompt instead:
+### Install dependencies
 
-```cmd
-venv\Scripts\activate.bat
-```
-
-**Linux or macOS:**
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### Step 3: Install dependencies
-
-```bash
+```powershell
 python -m pip install -r requirements.txt
 ```
 
-## 8. Running the Pipeline
+## 7. Run the Pipeline
 
-From the repository root directory, execute:
+From the repository root, enter the source directory:
 
-```bash
-python src/fraud_pipeline.py
+```powershell
+cd src
 ```
 
-The pipeline trains both models, calculates their Average Precision scores, performs financial cost optimization, and runs the drift simulation.
+Run the pipeline:
 
-The output includes:
+```powershell
+python fraud_pipeline.py
+```
 
-* Supervised model Average Precision
-* Unsupervised model Average Precision
-* Estimated minimum financial cost and selected threshold
-* Drift alert status for the normal batch
-* Drift alert status for the artificially shifted batch
+The pipeline trains both models, evaluates their performance, optimizes the financial decision threshold, and runs the drift simulation.
 
-Actual metrics and alert results depend on the dataset and execution environment.
+The dataset path must match your local configuration. If the script uses `../data/creditcard.csv`, run it from the `src` directory as shown above.
 
-## 9. Reproducing the Evaluation
+## 8. Example Results
 
-To reproduce the pipeline's results:
+The following results were obtained during one run on the real dataset.
 
-1. Clone the repository.
-2. Install the dependencies.
-3. Use the same dataset and file path, or allow the pipeline to generate synthetic data.
-4. Run `python src/fraud_pipeline.py`.
-5. Record the Average Precision scores, financial cost, selected threshold, and drift alert results.
+| Metric                        |  Result |
+| ----------------------------- | ------: |
+| Dataset transactions          | 284,807 |
+| Training transactions         | 199,364 |
+| Validation transactions       |  85,443 |
+| Supervised PR-AUC             |  0.8181 |
+| Supervised ROC-AUC            |  0.9248 |
+| Isolation Forest PR-AUC       |  0.1759 |
+| Selected financial threshold  |  0.1090 |
+| Validation-set optimized cost |  $3,970 |
 
-The pipeline uses fixed random seeds in key model and data-generation operations to improve reproducibility.
+### Confusion Matrix
 
-For comparisons between different model versions, use the same dataset and evaluation setup.
+```text
+[[85258    37]
+ [   24   124]]
+```
 
-## 10. Limitations
+The model detected 124 of the 148 fraud transactions in the validation set.
 
-* Synthetic data does not reproduce the full complexity of real-world fraud.
-* The financial cost values are illustrative assumptions.
-* The drift monitor detects feature distribution changes rather than directly measuring changes in fraud prediction accuracy.
-* The drift simulation modifies selected features to demonstrate the monitoring mechanism.
-* The current implementation simulates batches rather than monitoring a continuous live transaction stream.
-* A drift alert indicates that further investigation or model evaluation may be needed; it does not automatically establish that retraining will improve performance.
+These metrics are validation results, not independent estimates of performance on unseen test data. Results may vary with dataset versions and code changes.
 
-## 11. Future Improvements
+### Drift Simulation
 
-* Evaluate the models on an independent test set.
-* Add precision, recall, F1-score, and confusion matrix reporting.
-* Validate drift alert behavior across repeated normal and shifted batches.
+| Batch         | Drift ratio | Alert |
+| ------------- | ----------: | ----- |
+| Normal batch  |       0.00% | No    |
+| Shifted batch |      16.67% | Yes   |
+
+The shifted batch exceeded the configured 15% threshold and triggered an alert.
+
+## 9. Limitations
+
+* Fraud detection performance requires further evaluation on an independent test set.
+* Financial costs are illustrative assumptions.
+* Synthetic data does not reproduce the full complexity of real financial transactions.
+* The KS test detects distribution changes, not fraud model accuracy directly.
+* Drift is simulated rather than monitored from a live transaction stream.
+* A drift alert does not guarantee that retraining will improve performance.
+
+## 10. Future Improvements
+
+* Evaluate the selected threshold on an independent test set.
+* Add precision, recall, and F1-score reporting.
+* Evaluate drift detection across repeated batches.
 * Add visualizations for model performance and drift statistics.
-* Implement scheduled monitoring and a controlled model retraining workflow.
+* Develop a controlled model retraining workflow.
 
-## 12. Conclusion
+## 11. Conclusion
 
-This project demonstrates a machine learning approach to fraud detection that combines class-weighted supervised learning, unsupervised anomaly detection, precision-recall evaluation, financial cost-based threshold selection, and statistical drift monitoring.
+This project demonstrates a fraud detection pipeline that combines class-weighted supervised learning, unsupervised anomaly detection, financial cost optimization, and statistical data drift monitoring.
 
-By combining fraud detection with a basic drift alert mechanism, the pipeline illustrates why monitoring changing transaction patterns is an important part of maintaining machine learning systems over time.
+It illustrates how fraud detection and distribution monitoring can work together to help identify suspicious transactions and changes in transaction patterns.
